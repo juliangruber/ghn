@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var request = require('hyperquest');
 var JSONStream = require('JSONStream');
 var through = require('through2');
