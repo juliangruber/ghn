@@ -30,7 +30,7 @@ function gh(url){
 
 function render(){
   return through.obj(function(o, _, done){
-    var idx = o.idx;
+    var idx = o.idx + 1;
     var n = o.n;
     this.push(pad(3, idx) + ') ' + n.repository.full_name + ': ' + n.subject.title + '\n');
     done();
@@ -62,7 +62,7 @@ function prompt(ns){
   });
   rl.question('View? ', function(idx){
     rl.close();
-    var n = ns[idx];
+    var n = ns[idx - 1];
     if (!n) return prompt();
 
     gh(n.subject.url)
