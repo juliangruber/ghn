@@ -1,0 +1,18 @@
+{
+  "name": "ghn",
+  "version": "0.0.0",
+  "description": "GitHub notifications cli",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": "juliangruber/ghn",
+  "devDependencies": {
+    "tape": "*"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "JSONStream": "^0.9.0",
+    "hyperquest": "^1.0.1",
+    "through2": "^0.6.3"
+  }
+}
