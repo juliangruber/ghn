@@ -21,8 +21,9 @@ gh('https://api.github.com/notifications')
 })
 .pipe(process.stdout);
 
-function gh(url){
-  var req = request(url);
+function gh(url, method){
+  method = method || 'GET';
+  var req = request(url, { method: method });
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
   return req;
@@ -79,5 +80,10 @@ commands.view = function(n){
   gh(n.subject.url)
   .pipe(JSONStream.parse('html_url'))
   .pipe(concat(open));
+};
+commands.read = function(n){
+  var req = gh('https://api.github.com/notifications/threads/' + n.id, 'PATCH');
+  req.pipe(process.stdout);
+  req.end('read');
 };
 
