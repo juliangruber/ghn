@@ -6,6 +6,7 @@ var through = require('through2');
 var readline = require('readline');
 var open = require('open');
 var concat = require('concat-stream');
+var pad = require('pad');
 
 var token = process.env.TOKEN;
 var ns = [];
@@ -31,7 +32,7 @@ function render(){
   return through.obj(function(o, _, done){
     var idx = o.idx;
     var n = o.n;
-    this.push(idx + ') ' + n.repository.full_name + ': ' + n.subject.title + '\n');
+    this.push(pad(3, idx) + ') ' + n.repository.full_name + ': ' + n.subject.title + '\n');
     done();
   });
 }
