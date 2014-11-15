@@ -3,22 +3,71 @@
 var request = require('hyperquest');
 var JSONStream = require('JSONStream');
 var through = require('through2');
+var readline = require('readline');
+var open = require('open');
+var concat = require('concat-stream');
 
 var token = process.env.TOKEN;
+var ns = [];
 
-var req = request('https://api.github.com/notifications');
-req.setHeader('Authorization', 'token ' + token);
-req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
-
-req
+gh('https://api.github.com/notifications')
 .pipe(JSONStream.parse('*'))
-.pipe(renderNotification())
+.pipe(save(ns))
+.pipe(indexify())
+.pipe(render())
+.on('end', function(){
+  prompt(ns);
+})
 .pipe(process.stdout);
 
-function renderNotification(){
+function gh(url){
+  var req = request(url);
+  req.setHeader('Authorization', 'token ' + token);
+  req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
+  return req;
+}
+
+function render(){
+  return through.obj(function(o, _, done){
+    var idx = o.idx;
+    var n = o.n;
+    this.push(idx + ') ' + n.repository.full_name + ': ' + n.subject.title + '\n');
+    done();
+  });
+}
+
+function save(ns){
+  return through.obj(function(n, _, done){
+    ns.push(n);
+    done(null, n);
+  });
+}
+
+function indexify(){
   var idx = 0;
   return through.obj(function(n, _, done){
-    this.push(idx++ + ') ' + n.repository.full_name + ': ' + n.subject.title + '\n');
+    this.push({
+      idx: idx++,
+      n: n
+    });
     done();
+  })
+}
+
+function prompt(ns){
+  var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  rl.question('View? ', function(idx){
+    rl.close();
+    var n = ns[idx];
+    if (!n) return prompt();
+
+    gh(n.subject.url)
+    .pipe(JSONStream.parse('html_url'))
+    .pipe(concat(function(url){
+      open(url);
+    }))
   });
 }
