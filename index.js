@@ -60,15 +60,24 @@ function prompt(ns){
     input: process.stdin,
     output: process.stdout
   });
-  rl.question('View? ', function(idx){
+  rl.question('Command: ', function(line){
     rl.close();
-    var n = ns[idx - 1];
+    var segs = line.split(' ');
+
+    var cmd = commands[segs[0]];
+    if (!cmd) return prompt();
+
+    var n = ns[segs[1] - 1];
     if (!n) return prompt();
 
-    gh(n.subject.url)
-    .pipe(JSONStream.parse('html_url'))
-    .pipe(concat(function(url){
-      open(url);
-    }))
+    cmd(n);
   });
 }
+
+var commands = {};
+commands.view = function(n){
+  gh(n.subject.url)
+  .pipe(JSONStream.parse('html_url'))
+  .pipe(concat(open));
+};
+
