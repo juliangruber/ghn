@@ -17,7 +17,8 @@ gh('https://api.github.com/notifications')
 .pipe(indexify())
 .pipe(render())
 .on('end', function(){
-  prompt(ns);
+  if (ns.length) prompt(ns);
+  else console.error('No unread notifications.');
 })
 .pipe(process.stdout);
 
