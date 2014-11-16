@@ -24,6 +24,7 @@ $ npm install -g ghn
 ## Commands
 
 - `view ID`: open notification `ID` in your browser
+- `peek ID`: read the latest update to notification `ID` without marking it as read
 
 ## License
 

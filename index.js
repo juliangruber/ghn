@@ -81,4 +81,9 @@ commands.view = function(n){
   .pipe(JSONStream.parse('html_url'))
   .pipe(concat(open));
 };
+commands.peek = function(n){
+  gh(n.subject.latest_comment_url)
+  .pipe(JSONStream.parse('body'))
+  .pipe(process.stdout);
+};
 
