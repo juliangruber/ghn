@@ -33,6 +33,7 @@ function gh(url, method){
   method = method || 'GET';
   var req = request(url, { method: method });
   var out = PassThrough();
+  out.pipe(req);
   out.setHeader = req.setHeader.bind(req);
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
