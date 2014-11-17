@@ -9,6 +9,7 @@ var concat = require('concat-stream');
 var pad = require('pad');
 var PassThrough = require('stream').PassThrough;
 var readonly = require('read-only-stream');
+var getUpdates = require('gh-issue-updates');
 
 var token = process.env.TOKEN;
 var ns = [];
@@ -99,6 +100,17 @@ function prompt(ns){
   });
 }
 
+function lastChunk(){
+  var chunk;
+  return through.obj(function(c, _, done){
+    chunk = c;
+    done();
+  }, function(done){
+    this.push(chunk);
+    done();
+  });
+}
+
 var commands = {};
 commands.view = function(n, cb){
   gh(n.subject.url)
@@ -107,10 +119,58 @@ commands.view = function(n, cb){
   .on('finish', cb);
 };
 commands.peek = function(n, cb){
-  gh(n.subject.latest_comment_url)
-  .pipe(JSONStream.parse('body'))
-  .on('end', cb)
-  .pipe(process.stdout);
+  if (n.subject.type == 'Issue' || n.subject.type == 'PullRequest') {
+    var since = new Date(n.last_read_at || n.updated_at);
+
+    getUpdates({
+      issue: n.subject.url.split('/').pop(),
+      repo: n.repository.full_name,
+      token: token
+    }, function(err, updates){
+      if (err) throw err;
+      var ignore = [
+        'subscribed',
+        'mentioned',
+        'referenced'
+      ];
+      updates
+      .filter(function(u){
+        return (new Date(u.data.created_at)) - since >= 0
+          && ignore.indexOf(u.data.event) == -1
+      })
+      .forEach(function(u){
+        switch (u.type) {
+          case 'comment':
+            console.log('@%s: %s', u.data.user.login, u.data.body);
+            break;
+          case 'event':
+            switch (u.data.event) {
+              case 'merged':
+                console.log('@%s merged.', u.data.actor.login);
+                break;
+              case 'closed':
+                console.log('@%s closed.', u.data.actor.login);
+                break;
+              default:
+                throw new Error('event: ' + u.data.event);
+            }
+            break;
+          default:
+            throw new Error('type: ' + u.type);
+        }
+      });
+      cb();
+    });
+  } else if (n.subject.type == 'Commit') {
+    gh(n.subject.url)
+    .pipe(JSONStream.parse('commit.message'))
+    .pipe(concat(function(m){
+      console.log('Message: %s', m);
+      cb();
+    }));
+  } else {
+    throw new Error('type: ' + n.subject.type);
+  }
 };
 commands.read = function(n, cb){
   var req = gh('https://api.github.com/notifications/threads/' + n.id, 'PATCH');
