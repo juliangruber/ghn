@@ -94,6 +94,7 @@ function prompt(ns){
     var n = ns[segs[1] - 1];
     if (!n) return prompt();
 
+    console.log();
     cmd(n, function(){
       console.log();
       list(ns);
@@ -136,10 +137,11 @@ commands.peek = function(n, cb){
       ];
       updates
       .filter(function(u){
-        return (new Date(u.data.created_at)) - since >= 0
+        return (new Date(u.data.created_at)) - since >= -1000
           && ignore.indexOf(u.data.event) == -1
       })
       .forEach(function(u){
+        console.log('---');
         switch (u.type) {
           case 'comment':
             console.log('@%s: %s', u.data.user.login, u.data.body);
@@ -152,14 +154,27 @@ commands.peek = function(n, cb){
               case 'closed':
                 console.log('@%s closed.', u.data.actor.login);
                 break;
+              case 'assigned':
+                console.log('@%s assigned to @%s.', u.data.actor.login, u.data.assignee.login);
+                break;
               default:
                 throw new Error('event: ' + u.data.event);
             }
+            break;
+          case 'issue':
+            console.log(
+              '#%s %s (@%s)\n\n%s',
+              u.data.number,
+              u.data.title,
+              u.data.user.login,
+              u.data.body
+            );
             break;
           default:
             throw new Error('type: ' + u.type);
         }
       });
+      console.log('---\n');
       cb();
     });
   } else if (n.subject.type == 'Commit') {
