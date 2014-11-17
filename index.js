@@ -24,9 +24,10 @@ gh('https://api.github.com/notifications')
 })
 .pipe(process.stdout);
 
-function gh(url){
+function gh(url, method){
+  method = method || 'GET';
   var out = PassThrough();
-  var req = request(url);
+  var req = request(url, { method: method });
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
   req.on('response', function(res){
@@ -100,5 +101,11 @@ commands.peek = function(n){
   gh(n.subject.latest_comment_url)
   .pipe(JSONStream.parse('body'))
   .pipe(process.stdout);
+};
+commands.read = function(n){
+  var req = gh('https://api.github.com/notifications/threads/' + n.id, 'PATCH');
+  req.setHeader('Content-Length', '0');
+  req.pipe(process.stdout);
+  req.end();
 };
 
