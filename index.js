@@ -13,21 +13,26 @@ var readonly = require('read-only-stream');
 var token = process.env.TOKEN;
 var ns = [];
 
-gh('https://api.github.com/notifications')
-.pipe(JSONStream.parse('*'))
-.pipe(save(ns))
-.pipe(indexify())
-.pipe(render())
-.on('end', function(){
-  if (ns.length) prompt(ns);
-  else console.error('No unread notifications.');
-})
-.pipe(process.stdout);
+list(ns);
+
+function list(ns){
+  gh('https://api.github.com/notifications')
+  .pipe(JSONStream.parse('*'))
+  .pipe(save(ns))
+  .pipe(indexify())
+  .pipe(render())
+  .on('end', function(){
+    if (ns.length) prompt(ns);
+    else console.error('No unread notifications.');
+  })
+  .pipe(process.stdout);
+}
 
 function gh(url, method){
   method = method || 'GET';
-  var out = PassThrough();
   var req = request(url, { method: method });
+  var out = PassThrough();
+  out.setHeader = req.setHeader.bind(req);
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
   req.on('response', function(res){
@@ -42,7 +47,7 @@ function gh(url, method){
       });
     }
   });
-  return readonly(out);
+  return out;
 }
 
 function render(){
@@ -87,25 +92,31 @@ function prompt(ns){
     var n = ns[segs[1] - 1];
     if (!n) return prompt();
 
-    cmd(n);
+    cmd(n, function(){
+      console.log();
+      list(ns);
+    });
   });
 }
 
 var commands = {};
-commands.view = function(n){
+commands.view = function(n, cb){
   gh(n.subject.url)
   .pipe(JSONStream.parse('html_url'))
-  .pipe(concat(open));
+  .pipe(concat(open))
+  .on('finish', cb);
 };
-commands.peek = function(n){
+commands.peek = function(n, cb){
   gh(n.subject.latest_comment_url)
   .pipe(JSONStream.parse('body'))
+  .on('end', cb)
   .pipe(process.stdout);
 };
-commands.read = function(n){
+commands.read = function(n, cb){
   var req = gh('https://api.github.com/notifications/threads/' + n.id, 'PATCH');
   req.setHeader('Content-Length', '0');
   req.pipe(process.stdout);
+  req.on('end', cb);
   req.end();
 };
 
