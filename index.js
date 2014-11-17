@@ -7,6 +7,8 @@ var readline = require('readline');
 var open = require('open');
 var concat = require('concat-stream');
 var pad = require('pad');
+var PassThrough = require('stream').PassThrough;
+var readonly = require('read-only-stream');
 
 var token = process.env.TOKEN;
 var ns = [];
@@ -23,10 +25,23 @@ gh('https://api.github.com/notifications')
 .pipe(process.stdout);
 
 function gh(url){
+  var out = PassThrough();
   var req = request(url);
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
-  return req;
+  req.on('response', function(res){
+    if (String(res.statusCode)[0] == 2) {
+      res.pipe(out);
+    } else {
+      console.error('Status %s', res.statusCode);
+      res.pipe(process.stderr, { end: false });
+      res.on('end', function(){
+        console.log();
+        process.exit(1);
+      });
+    }
+  });
+  return readonly(out);
 }
 
 function render(){

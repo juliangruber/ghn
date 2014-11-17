@@ -16,6 +16,7 @@
     "hyperquest": "^1.0.1",
     "open": "0.0.5",
     "pad": "0.0.5",
+    "read-only-stream": "^1.1.1",
     "through2": "^0.6.3"
   },
   "bin": {
