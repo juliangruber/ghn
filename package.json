@@ -1,6 +1,6 @@
 {
   "name": "ghn",
-  "version": "6.666.66",
+  "version": "6.666.67",
   "description": "GitHub notifications cli",
   "scripts": {
     "test": "make test"
