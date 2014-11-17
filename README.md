@@ -15,6 +15,8 @@ Command: view 1
 $ # opens Issue 1 in your browser
 ```
 
+  Create a token [here](https://github.com/settings/applications) and ensure it has `notification` and `repo` rights.
+
 ## Installation
 
 ```bash
