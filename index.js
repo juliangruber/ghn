@@ -83,7 +83,8 @@ commands.view = function(n){
 };
 commands.read = function(n){
   var req = gh('https://api.github.com/notifications/threads/' + n.id, 'PATCH');
+  req.setHeader('Content-Length', '0');
   req.pipe(process.stdout);
-  req.end('read');
+  req.end();
 };
 
