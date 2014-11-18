@@ -33,7 +33,7 @@ function gh(url, method){
   method = method || 'GET';
   var req = request(url, { method: method });
   var out = PassThrough();
-  out.pipe(req);
+  if (method != 'GET') out.pipe(req);
   out.setHeader = req.setHeader.bind(req);
   req.setHeader('Authorization', 'token ' + token);
   req.setHeader('User-Agent', 'https://github.com/juliangruber/ghn');
@@ -97,6 +97,7 @@ function prompt(ns){
     console.log();
     cmd(n, function(){
       console.log();
+      ns = [];
       list(ns);
     });
   });
@@ -123,57 +124,64 @@ commands.view = function(n, cb){
 commands.peek = function(n, cb){
   if (n.subject.type == 'Issue' || n.subject.type == 'PullRequest') {
     var since = new Date(n.last_read_at || n.updated_at);
+    var ignore = [
+      'subscribed',
+      'mentioned',
+      'referenced'
+    ];
 
     getUpdates({
       issue: n.subject.url.split('/').pop(),
       repo: n.repository.full_name,
       token: token
-    }, function(err, updates){
-      if (err) throw err;
-      var ignore = [
-        'subscribed',
-        'mentioned',
-        'referenced'
-      ];
-      updates
-      .filter(function(u){
-        return (new Date(u.data.created_at)) - since >= -1000
-          && ignore.indexOf(u.data.event) == -1
-      })
-      .forEach(function(u){
-        console.log('---');
-        switch (u.type) {
-          case 'comment':
-            console.log('@%s: %s', u.data.user.login, u.data.body);
-            break;
-          case 'event':
-            switch (u.data.event) {
-              case 'merged':
-                console.log('@%s merged.', u.data.actor.login);
-                break;
-              case 'closed':
-                console.log('@%s closed.', u.data.actor.login);
-                break;
-              case 'assigned':
-                console.log('@%s assigned to @%s.', u.data.actor.login, u.data.assignee.login);
-                break;
-              default:
-                throw new Error('event: ' + u.data.event);
-            }
-            break;
-          case 'issue':
-            console.log(
-              '#%s %s (@%s)\n\n%s',
-              u.data.number,
-              u.data.title,
-              u.data.user.login,
-              u.data.body
-            );
-            break;
-          default:
-            throw new Error('type: ' + u.type);
-        }
-      });
+    })
+    .pipe(through.obj(function(u, _, done){
+      if ((new Date(u.data.created_at)) - since >= -1000) this.push(u);
+      done();
+    }))
+    .pipe(through.obj(function(u, _, done){
+      if (ignore.indexOf(u.data.event) == -1) this.push(u);
+      done();
+    }))
+    .pipe(through.obj(function(u, _, done){
+      console.log('---');
+      switch (u.type) {
+        case 'comment':
+          console.log('@%s: %s', u.data.user.login, u.data.body);
+          break;
+        case 'commit comment':
+          console.log('%s\n\n%s\n\n@%s: %s', u.data.path, u.data.diff_hunk, u.data.user.login, u.data.body);
+          break;
+        case 'event':
+          switch (u.data.event) {
+            case 'merged':
+              console.log('@%s merged.', u.data.actor.login);
+              break;
+            case 'closed':
+              console.log('@%s closed.', u.data.actor.login);
+              break;
+            case 'assigned':
+              console.log('@%s assigned to @%s.', u.data.actor.login, u.data.assignee.login);
+              break;
+            default:
+              throw new Error('event: ' + u.data.event);
+          }
+          break;
+        case 'issue':
+          console.log(
+            '#%s %s (@%s)\n\n%s',
+            u.data.number,
+            u.data.title,
+            u.data.user.login,
+            u.data.body
+          );
+          break;
+        default:
+          throw new Error('type: ' + u.type);
+      }
+      done();
+    }))
+    .on('finish', function(){
       console.log('---\n');
       cb();
     });
