@@ -7,7 +7,7 @@
   },
   "repository": "juliangruber/ghn",
   "devDependencies": {
-    "tape": "*"
+    "tape": ">=4.6.3"
   },
   "license": "MIT",
   "dependencies": {
