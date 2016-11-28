@@ -17,7 +17,7 @@
     "open": "0.0.5",
     "pad": "1.0.2",
     "read-only-stream": "^2.0.0",
-    "through2": "^2.0.1"
+    "through2": "^2.0.3"
   },
   "bin": {
     "ghn": "index.js"
