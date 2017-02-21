@@ -15,7 +15,7 @@
     "concat-stream": "^1.4.6",
     "hyperquest": "^2.1.0",
     "open": "0.0.5",
-    "pad": "1.0.3",
+    "pad": "1.1.0",
     "read-only-stream": "^2.0.0",
     "through2": "^2.0.1"
   },
